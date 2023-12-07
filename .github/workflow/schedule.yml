@@ -1,0 +1,29 @@
+name: Weekly Telegram Summary
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Runs every Sunday at midnight
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.8'
+
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+
+    - name: Run Telegram summary script
+      run: python telegram_summary.py
+      env:
+        TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
+        TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        GROUP_USERNAME: ${{ secrets.GROUP_USERNAME }}
+        PERSONAL_CHAT_ID: ${{ secrets.PERSONAL_CHAT_ID }}
