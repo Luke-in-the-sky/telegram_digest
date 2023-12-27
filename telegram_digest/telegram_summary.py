@@ -6,15 +6,16 @@ from telethon.tl.functions.messages import SearchRequest
 from telethon.tl.types import InputMessagesFilterEmpty
 from openai import ChatCompletion
 
-api_id = os.environ['TELEGRAM_API_ID']
-api_hash = os.environ['TELEGRAM_API_HASH']
-openai_api_key = os.environ['OPENAI_API_KEY']
+import asyncio
+from telethon import TelegramClient
+from telethon.sessions import StringSession
+from telethon.tl.functions.messages import SearchRequest
+from telethon.tl.types import InputMessagesFilterEmpty
 
-openai.api_key = openai_api_key
+import pandas as pd
 
-client = TelegramClient('session_name', api_id, api_hash)
 
-async def get_messages_in_last_n_days(group_name, n):
+async def get_messages_in_last_n_days(client, group_name, n):
     await client.start()
     entity = await client.get_entity(group_name)
     today = datetime.now()
@@ -50,16 +51,32 @@ async def send_message_to_chat(chat_id, message):
     await client.send_message(chat_id, message)
 
 async def main():
-    group_name = os.environ['GROUP_USERNAME']
+    #== Pull params from env variables
+    # API keys
+    load_env_variables('.env')
+    api_id = os.environ['TELEGRAM_API_ID']
+    api_hash = os.environ['TELEGRAM_API_HASH']
+    # openai.api_key = os.environ['OPENAI_API_KEY']
+    # Other params
+    group_chat_name = os.environ['GROUP_CHAT_NAME']
     personal_chat_id = os.environ['PERSONAL_CHAT_ID']
+
+    #== Initialize Telegram client
+    client = TelegramClient('session_name', api_id, api_hash)
+
+    #== Other params (that we should probably pull out)
     n_days = 7
 
-    messages = await get_messages_in_last_n_days(group_name, n_days)
-    summary = summarize(messages)
+    #== Run the bot
+    messages = await get_messages_in_last_n_days(client, group_chat_name, n_days)
+    print(messages)
+    # summary = summarize(messages)
 
-    await send_message_to_chat(personal_chat_id, summary)
+    # await send_message_to_chat(personal_chat_id, summary)
 
     await client.disconnect()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(
+        main()
+        )
