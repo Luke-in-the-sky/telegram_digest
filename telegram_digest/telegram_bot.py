@@ -182,6 +182,7 @@ class TelegramMessagesParsing:
       df['sender_name'] = df.sender_id.apply(users.get)
 
       if clean_strings:
+        df = df.dropna()
         # clean up text strings
         def clean_string(s):
             # Remove emojis (it's just extra tokens for the LLM that are not helpful for our usecase)
