@@ -9,8 +9,9 @@ from llm import PoeBot
 logger = MyLogger("bot").logger
 
 async def main():
+    
     bot_builder = TelegramBotBuilder(Config.TELEGRAM_BOT_TOKEN) \
-        .with_core_api(Config.TELEGRAM_CORE_API_ID, Config.TELEGRAM_CORE_API_HASH, api_session_str=Config.TELEGRAM_CORE_API_SESSION_STR)
+        .with_core_api(Config.TELEGRAM_API_ID, Config.TELEGRAM_API_HASH, api_session_str=Config.TELEGRAM_SESSION_STRING)
     bot = bot_builder.get_bot()
     
     # pull messages

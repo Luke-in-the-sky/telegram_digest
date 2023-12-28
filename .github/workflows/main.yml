@@ -25,9 +25,9 @@ jobs:
       - name: Run the script
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CORE_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
-          TELEGRAM_CORE_API_ID: ${{ secrets.TELEGRAM_API_ID }}
-          TELEGRAM_CORE_API_SESSION_STR: ${{ secrets.TELEGRAM_SESSION_STRING }}
+          TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+          TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          TELEGRAM_SESSION_STRING: ${{ secrets.TELEGRAM_SESSION_STRING }}
           POE_PB_TOKEN: ${{ secrets.POE_PB_TOKEN }}
           POE_CHAT_CODE: ${{ secrets.POE_CHAT_CODE }}
         run: python telegram_digest/main.py
