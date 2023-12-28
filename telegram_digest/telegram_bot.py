@@ -1,12 +1,10 @@
 import logging
-
-import requests
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 from config import Config
+from utils import MyLogger
 
-logger = logging.getLogger("bot")
-logger.setLevel("DEBUG")
+logger = MyLogger("bot").logger
 
 
 class TelegramBotBuilder:
@@ -16,10 +14,6 @@ class TelegramBotBuilder:
     def __init__(self, token):
         logger.info("Building a new bot.")
         self.bot = TelegramBot(token)
-
-    def with_webhook(self, host):
-        self.bot.set_webhook(host)
-        return self
 
     def with_core_api(self, api_id, api_hash, api_session_str=None):
         logger.info("Setting up core api client.")
@@ -38,7 +32,7 @@ class TelegramBotBuilder:
     def get_bot(self):
         return self.bot
     
-    async def _create_a_session_key(self) -> str:
+    async def _create_a_session_key(self, api_id, api_hash) -> str:
       """
       Create a new session string, save it to file.
 
@@ -66,28 +60,16 @@ class TelegramBot:
         self.core_api_client = None
         self.dialogs = None
 
-    def set_webhook(self, host):
-        try:
-            host = host.replace("http", "https")
-            logger.info(f"Setting webhook for url: {host}")
-            set_webhook_url = f"{self.bot_api_url}/setWebhook?url={host}"
-
-            response = requests.get(set_webhook_url)
-            response.raise_for_status()
-            logger.info(f"Got response: {response.json()}")
-        except Exception as e:
-            logger.error(f"Failed to set webhook: {e}")
-
-    def send_message(self, chat_id, message):
-        try:
-            logger.info(f"Sending message to chat #{chat_id}")
-            send_message_url = f"{self.bot_api_url}/sendMessage"
-            response = requests.post(send_message_url, json={"chat_id": chat_id,
-                                                              "text": message})
-            response.raise_for_status()
-        except Exception as e:
-            logger.error(f"Failed to send message: {e}")
-            raise
+    # def send_message(self, chat_id, message):
+    #     try:
+    #         logger.info(f"Sending message to chat #{chat_id}")
+    #         send_message_url = f"{self.bot_api_url}/sendMessage"
+    #         response = requests.post(send_message_url, json={"chat_id": chat_id,
+    #                                                           "text": message})
+    #         response.raise_for_status()
+    #     except Exception as e:
+    #         logger.error(f"Failed to send message: {e}")
+    #         raise
 
     async def _from_chat_name_to_chat_id(self, chat_name: str) -> int:
         client = self.core_api_client
@@ -101,22 +83,54 @@ class TelegramBot:
         """
         Set the specific chat we want to summarize. Returns the chat id.
         """
-        self.logger.info(f"Getting the group chat id for `{target_chat_name}`")
+        logger.info(f"Getting the group chat id for `{target_chat_name}`")
         self.target_chat_name = target_chat_name
         self.target_chat_id = await self._from_chat_name_to_chat_id(target_chat_name)
-        self.logger.info(f"  --> found id {self.target_chat_id} for `{target_chat_name}`")
+        logger.info(f"  --> found id {self.target_chat_id} for `{target_chat_name}`")
         return self.target_chat_id
 
-    async def get_chat_history(self, chat_id, limit=30):
-        try:
-            if not self.core_api_client:
-                return []
-            logger.info(f"Getting conversation history for chat #{chat_id}")
-            history = await self.core_api_client.get_messages(chat_id, limit)
-            result = [f"{message.sender.first_name} {message.sender.last_name}: {message.message} \n"
-                      for message in history if not message.action]
-            result.reverse()
-            return '\n'.join(result)
-        except Exception as e:
-            logger.error(f"Failed to get chat history: {e}")
-            raise
+    async def get_messages_between_dates(self, start_date, end_date):
+        """
+        Fetch all messages between the given datetimes. If `mode=='a'`,
+        we will append to the previously-pulled list
+        Fetching is paginated (batch size=100)
+        """     
+
+        client = self.core_api_client
+        chat_id = self.target_chat_id
+
+        all_messages = []
+        total_count_limit = 1000  # Adjust this number based on how many messages you want to retrieve in total
+        batch_size = 100
+        offset_id = 0
+        continue_fetching = True
+
+        logger.info(f"Fetching messages from {start_date} to {end_date}...")
+        await client.start()
+        while continue_fetching:
+            msgs = [message async for message in client.iter_messages(
+                chat_id, 
+                offset_date=end_date,
+                limit=batch_size,
+                offset_id = offset_id
+                )]
+
+            if not msgs or len(msgs)==0:
+                logger.warning('  --> No messages')
+                break
+
+            for msg in msgs:
+                if msg.date >= start_date:
+                    all_messages.append(msg)
+                else:
+                    logger.info('  --> found all messages')
+                    continue_fetching = False
+                    break
+
+            if len(all_messages) >= total_count_limit:
+                break  # Break the loop if the limit is reached
+
+            # update the offset
+            offset_id = min([x.id for x in msgs])
+
+        return all_messages
