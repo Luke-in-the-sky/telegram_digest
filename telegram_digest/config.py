@@ -9,4 +9,5 @@ class Config:
     TELEGRAM_CORE_API_HASH = os.getenv("TELEGRAM_API_HASH")
     TELEGRAM_CORE_API_ID = os.getenv("TELEGRAM_API_ID")
     TELEGRAM_CORE_API_SESSION_STR = os.getenv("TELEGRAM_SESSION_STRING")
-    PORT = os.getenv("TELEGRAM_BOT_PORT", 5000)
+    POE_PB_TOKEN = os.getenv("POE_PB_TOKEN")
+    POE_CHAT_CODE = os.getenv("POE_CHAT_CODE")

@@ -1,8 +1,10 @@
-import logging
+import pandas as pd
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 from config import Config
 from utils import MyLogger
+import emoji
+import re
 
 logger = MyLogger("bot").logger
 
@@ -64,9 +66,8 @@ class TelegramBot:
         """
         Sending a message with the core api (as opposed to as a bot)
         """
-        await self.core_api_client.start()
         try:
-            logger.info(f"Sending message to chat `{chat_id}`")
+            logger.info(f"Telegram: sending message to chat `{chat_id}`")
             await self.core_api_client.send_message(chat_id, message)
         except Exception as e:
             logger.error(f"Failed to send message: {e}")
@@ -95,8 +96,7 @@ class TelegramBot:
         Fetch all messages between the given datetimes. If `mode=='a'`,
         we will append to the previously-pulled list
         Fetching is paginated (batch size=100)
-        """     
-
+        """
         client = self.core_api_client
         chat_id = self.target_chat_id
 
@@ -135,3 +135,80 @@ class TelegramBot:
             offset_id = min([x.id for x in msgs])
 
         return all_messages
+
+
+class TelegramMessagesParsing:
+    """
+    Helper class to parse messages
+    """
+    def __init__(self, client, chat_id, messages):
+        self.messages = messages
+        self.chat_id = chat_id
+        self.client = client
+        self.participants = None
+
+    async def from_sender_id_to_name(self, sender_id: int) -> str:
+      """
+      Get Sender names
+      """
+      client = self.client
+
+      if self.participants is None or len(self.participants) == 0:
+        logger.info('Building dict of participants')
+        self.participants = {
+            x.id: x for x in await client.get_participants(self.chat_id)}
+
+      entity = self.participants.get(sender_id)
+      name = entity.first_name or entity.username
+      return name[:10]
+
+
+    async def to_df(self, clean_strings = True):
+      logger.info('Making it a df...')
+      msgs = self.messages
+
+      # make it a df
+      df = pd.DataFrame([
+          {'msg': x.message, 
+          'date': x.date,
+          'sender_id': x.sender_id
+          } 
+          for x in msgs
+          ]).sort_values(by='date')
+
+      # from user_ids to user names (from_sender_id_to_name is async, so we can't apply directly in pandas)
+      users = {id: await self.from_sender_id_to_name(int(id)) for id in df.sender_id.unique() if id is not None}
+      df['sender_name'] = df.sender_id.apply(users.get)
+
+      if clean_strings:
+        # clean up text strings
+        def clean_string(s):
+            # Remove emojis (it's just extra tokens for the LLM that are not helpful for our usecase)
+            s = emoji.replace_emoji(s, replace='')
+
+            # Replace newlines with a single space
+            s = re.sub(r'\n+', ' ', s)
+
+            # Replace multiple spaces with a single space
+            s = re.sub(r'\s+', ' ', s)
+
+            return s.strip()
+
+        df['msg_clean'] = df.msg.apply(clean_string)
+
+      return df
+    
+    async def to_str(self, clean_strings = True) -> str:
+        """
+        Represent the list of messages as one single (formatted) string
+        """
+        df = await self.to_df(clean_strings)
+        msgs_formatted = df.sort_values(
+            by='date', ascending=True
+        ).apply(
+            lambda x: f'[{x.sender_name}] {x.msg_clean}' if len(x.msg_clean)>0 else None, 
+            axis=1
+        )
+
+        # collate all messages
+        return '\n'.join( msgs_formatted.dropna())
