@@ -99,7 +99,6 @@ class TelegramBot:
         """
         client = self.core_api_client
         chat_id = self.target_chat_id
-
         all_messages = []
         total_count_limit = 1000  # Adjust this number based on how many messages you want to retrieve in total
         batch_size = 100
@@ -107,32 +106,32 @@ class TelegramBot:
         continue_fetching = True
 
         logger.info(f"Fetching messages from {start_date} to {end_date}...")
-        await client.start()
-        while continue_fetching:
-            msgs = [message async for message in client.iter_messages(
-                chat_id, 
-                offset_date=end_date,
-                limit=batch_size,
-                offset_id = offset_id
-                )]
+        async with client:
+            while continue_fetching:
+                msgs = [message async for message in client.iter_messages(
+                    chat_id, 
+                    offset_date=end_date,
+                    limit=batch_size,
+                    offset_id = offset_id
+                    )]
 
-            if not msgs or len(msgs)==0:
-                logger.warning('  --> No messages')
-                break
-
-            for msg in msgs:
-                if msg.date >= start_date:
-                    all_messages.append(msg)
-                else:
-                    logger.info('  --> found all messages')
-                    continue_fetching = False
+                if not msgs or len(msgs)==0:
+                    logger.warning('  --> No messages')
                     break
 
-            if len(all_messages) >= total_count_limit:
-                break  # Break the loop if the limit is reached
+                for msg in msgs:
+                    if msg.date >= start_date:
+                        all_messages.append(msg)
+                    else:
+                        logger.info('  --> found all messages')
+                        continue_fetching = False
+                        break
 
-            # update the offset
-            offset_id = min([x.id for x in msgs])
+                if len(all_messages) >= total_count_limit:
+                    break  # Break the loop if the limit is reached
+
+                # update the offset
+                offset_id = min([x.id for x in msgs])
 
         return all_messages
 
@@ -155,8 +154,10 @@ class TelegramMessagesParsing:
 
       if self.participants is None or len(self.participants) == 0:
         logger.info('Building dict of participants')
-        self.participants = {
-            x.id: x for x in await client.get_participants(self.chat_id)}
+        async with client:
+            self.participants = {
+                x.id: x 
+                for x in await client.get_participants(self.chat_id)}
 
       entity = self.participants.get(sender_id)
       name = entity.first_name or entity.username

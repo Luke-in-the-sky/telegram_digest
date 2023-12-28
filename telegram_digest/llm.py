@@ -3,8 +3,8 @@ import textwrap
 from utils import MyLogger
 
 logger = MyLogger("bot").logger
-class PoeBot:
 
+class PoeBot:
     def __init__(self, poe_token) -> None:
         logger.info("Building a new PoeBot.")
         self.client = PoeApi(poe_token)
