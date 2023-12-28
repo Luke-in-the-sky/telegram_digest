@@ -1,4 +1,6 @@
 from pydantic import BaseSettings
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 class AppConfig(BaseSettings):
     TELEGRAM_BOT_TOKEN: str
@@ -8,6 +10,9 @@ class AppConfig(BaseSettings):
     TELEGRAM_SESSION_STRING: str
     POE_PB_TOKEN: str
     POE_CHAT_CODE: str
+
+    END_DATE: datetime = datetime.now(ZoneInfo('America/Los_Angeles'))
+    START_DATE: datetime = END_DATE - timedelta(days=1)
 
     class Config:
         """

@@ -1,5 +1,4 @@
-from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
+import textwrap
 import asyncio
 from utils import MyLogger
 from config import Config
@@ -9,17 +8,13 @@ from llm import PoeBot
 logger = MyLogger("bot").logger
 
 async def main():
-    
     bot_builder = TelegramBotBuilder(Config.TELEGRAM_BOT_TOKEN) \
         .with_core_api(Config.TELEGRAM_API_ID, Config.TELEGRAM_API_HASH, api_session_str=Config.TELEGRAM_SESSION_STRING)
     bot = bot_builder.get_bot()
     
     # pull messages
     await bot.set_target_chat_id('Gemini Earn Users')
-    current_time = datetime.now(ZoneInfo('America/Los_Angeles'))
-    end_date = current_time
-    start_date = end_date - timedelta(days=1)
-    messages = await bot.get_messages_between_dates(start_date, end_date)
+    messages = await bot.get_messages_between_dates(Config.START_DATE, Config.END_DATE)
     
     # process messages
     telparser = TelegramMessagesParsing(
@@ -35,9 +30,11 @@ async def main():
     # send summary
     logger.info('## Sending summary to telegram')
     async with bot.core_api_client:
-        await bot.core_api_send_message('me', f'Summary: {start_date.isoformat()[:10]} - {end_date.isoformat()[:10]}')
-        await bot.core_api_send_message('me', response['text'])
-
+        message = f"""Summary: {Config.START_DATE.isoformat()[:10]} - {Config.END_DATE.isoformat()[:10]}
+        
+        {response['text']}
+        """
+        await bot.core_api_send_message('me', textwrap.dedent(message))
 
 if __name__ == "__main__":
     asyncio.run(main())
