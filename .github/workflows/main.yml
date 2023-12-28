@@ -30,3 +30,4 @@ jobs:
           TELEGRAM_CORE_API_SESSION_STR: ${{ secrets.TELEGRAM_SESSION_STRING }}
           POE_PB_TOKEN: ${{ secrets.POE_PB_TOKEN }}
           POE_CHAT_CODE: ${{ secrets.POE_CHAT_CODE }}
+        run: python telegram_digest/main.py
