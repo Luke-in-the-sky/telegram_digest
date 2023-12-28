@@ -60,16 +60,17 @@ class TelegramBot:
         self.core_api_client = None
         self.dialogs = None
 
-    # def send_message(self, chat_id, message):
-    #     try:
-    #         logger.info(f"Sending message to chat #{chat_id}")
-    #         send_message_url = f"{self.bot_api_url}/sendMessage"
-    #         response = requests.post(send_message_url, json={"chat_id": chat_id,
-    #                                                           "text": message})
-    #         response.raise_for_status()
-    #     except Exception as e:
-    #         logger.error(f"Failed to send message: {e}")
-    #         raise
+    async def core_api_send_message(self, chat_id, message):
+        """
+        Sending a message with the core api (as opposed to as a bot)
+        """
+        await self.core_api_client.start()
+        try:
+            logger.info(f"Sending message to chat `{chat_id}`")
+            await self.core_api_client.send_message(chat_id, message)
+        except Exception as e:
+            logger.error(f"Failed to send message: {e}")
+            raise
 
     async def _from_chat_name_to_chat_id(self, chat_name: str) -> int:
         client = self.core_api_client

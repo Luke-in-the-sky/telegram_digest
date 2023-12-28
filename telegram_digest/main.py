@@ -17,17 +17,18 @@ async def main():
     await bot.core_api_client.connect()
     await bot.core_api_client.start()
 
+    print('kk')
+    await bot.send_message('me', 'Hi from the bot')
+
     await bot.set_target_chat_id('Gemini Earn Users')
     print(bot.target_chat_id)
-
-
-    # pull messages
-    # Get the current time with timezone
-    current_time = datetime.now(ZoneInfo('America/Los_Angeles'))
-    end_date = current_time - timedelta(days=1)
-    start_date = end_date - timedelta(days=1)
-    out = await bot.get_messages_between_dates(start_date , end_date)
-    print(out)
+    # # pull messages
+    # # Get the current time with timezone
+    # current_time = datetime.now(ZoneInfo('America/Los_Angeles'))
+    # end_date = current_time - timedelta(days=1)
+    # start_date = end_date - timedelta(days=1)
+    # out = await bot.get_messages_between_dates(start_date , end_date)
+    # print(out)
 
 if __name__ == "__main__":
     asyncio.run(main())
