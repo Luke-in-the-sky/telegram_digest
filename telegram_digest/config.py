@@ -1,4 +1,4 @@
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 

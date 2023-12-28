@@ -31,7 +31,7 @@ async def main():
     logger.info('## Sending summary to telegram')
     async with bot.core_api_client:
         message = f"""Summary: {Config.START_DATE.isoformat()[:10]} - {Config.END_DATE.isoformat()[:10]}
-        
+
         {response['text']}
         """
         await bot.core_api_send_message('me', textwrap.dedent(message))

@@ -1,5 +1,6 @@
-pydantic[dotenv]
+pydantic==2.5.3
+pydantic-settings==2.1.0
 telethon==1.27.0
 emoji==2.9.0
 pandas==1.5.3
-poe_api_wrapper
+poe_api_wrapper==1.3.6
