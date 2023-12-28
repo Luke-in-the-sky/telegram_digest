@@ -2,7 +2,7 @@ name: Daily Script
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # This runs at midnight UTC every day
+    - cron: '0 8 * * *'  # This runs at midnight UTC every day
 
 jobs:
   telegram-summary:
