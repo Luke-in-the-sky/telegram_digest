@@ -1,6 +1,6 @@
 import os
-from utils import load_env_variables
-load_env_variables(".env")
+# from utils import load_env_variables
+# load_env_variables(".env")
 
 class Config:
     TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
