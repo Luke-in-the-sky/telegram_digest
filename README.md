@@ -9,6 +9,7 @@ Set your keys for anything that does not have a default value in `AppConfig` (`c
 1. TELEGRAM_SESSION_STRING: str
 1. POE_PB_TOKEN: str
 1. POE_CHAT_CODE: str
+
 These can be placed in any of the following places:
 1. as environment variables (eg `export`), including as secrets that then get exposed as environment variables
 1. in a `conf.env` file
