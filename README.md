@@ -14,4 +14,8 @@ V1 can take arbitrary-length input and uses a refine-summary strategy to summari
 1. summary quality. 2 issues
     1. no metric to measure quality of one summary vs another
     2. no stability: even the same input against the same poe bot will give different summaries
+1. experiment with different bots 
+2. experiment with different thread representations
+     1. add "reply to.." to identify replies
+     2. represent the reply-chains in a more structured form (eg all replies in the same chain are collected and represented together, instead of interleaved in the main thread)
 1. interactive: host the bot on heroku / fly.io, so I can interact with it via Telegram
