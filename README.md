@@ -2,6 +2,18 @@
 Some Telegram chats are way too active for me to keep up with.  Let's pull the last N days from these chats, summarize and send a digest, instead
 
 ## How to
+Set your keys for anything that does not have a default value in `AppConfig` (`config.py`):
+1. TELEGRAM_BOT_TOKEN: str
+1. TELEGRAM_API_HASH: str
+1. TELEGRAM_API_ID: str
+1. TELEGRAM_SESSION_STRING: str
+1. POE_PB_TOKEN: str
+1. POE_CHAT_CODE: str
+These can be placed in any of the following places:
+1. as environment variables (eg `export`), including as secrets that then get exposed as environment variables
+1. in a `conf.env` file
+
+then do:
 ```
 $ pip install -r requirements.txt
 $ python telegram_digest/main.py
