@@ -3,9 +3,7 @@ import pandas as pd
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 from config import Config
-from utils import MyLogger
-import emoji
-import re
+from utils import MyLogger, clean_string, replace_urls_with_placeholder
 
 logger = MyLogger("bot").logger
 
@@ -190,22 +188,8 @@ class TelegramMessagesParsing:
 
         if clean_strings:
             df = df.dropna()
-
-            # clean up text strings
-            def clean_string(s):
-                # Remove emojis (it's just extra tokens for the LLM that are not helpful for our usecase)
-                s = emoji.replace_emoji(s, replace="")
-
-                # Replace newlines with a single space
-                s = re.sub(r"\n+", " ", s)
-
-                # Replace multiple spaces with a single space
-                s = re.sub(r"\s+", " ", s)
-
-                return s.strip()
-
-            df["msg_clean"] = df.msg.apply(clean_string)
-
+            df["msg_clean"] = df.msg.apply(replace_urls_with_placeholder).apply(clean_string)
+            
         return df
 
     async def to_list_of_formatted_messages(self, clean_strings=True) -> List[str]:

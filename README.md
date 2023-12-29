@@ -11,5 +11,7 @@ V1 can take arbitrary-length input and uses a refine-summary strategy to summari
 1. config loading: use pydantic_settings.BaseSettings to import either from environment variables (eg github secrets) or from file
 
 ## TODO
-1. re-wrod the prompt based on https://docs.anthropic.com/claude/docs/claude-2p1-guide#experimental-tool-use : first present the data, then ask the question
-1. re-word the prompt with "You ALWAYS follow these guidelines when writing your response:"
+1. summary quality. 2 issues
+    1. no metric to measure quality of one summary vs another
+    2. no stability: even the same input against the same poe bot will give different summaries
+1. interactive: host the bot on heroku / fly.io, so I can interact with it via Telegram
