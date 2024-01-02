@@ -221,3 +221,14 @@ class TelegramMessagesParsing:
 
         # collate all messages
         return "\n".join(msgs_formatted.dropna())
+
+    async def render_reply(self, msg: dict) -> str:
+        """
+        Renders a reply message.
+        """
+        text = msg.get('text', '')
+        if 'reply_to_message' in msg and msg['reply_to_message'] is not None:
+            reply_from = msg['reply_to_message'].get('from', '')
+            reply_text = msg['reply_to_message'].get('text', '')[:100]
+            text += f' Reply To {reply_from}: "{reply_text}"'
+        return text
