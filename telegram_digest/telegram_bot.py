@@ -213,9 +213,7 @@ class TelegramMessagesParsing:
         """
         df = await self.to_df(clean_strings)
         msgs_formatted = df.sort_values(by="date", ascending=True).apply(
-            lambda x: f"[{x.sender_name}] {x.msg_clean}"
-            if len(x.msg_clean) > 0
-            else None,
+            lambda x: f"[{x.sender_name}] {x.msg_clean}" if x.msg_clean else None,
             axis=1,
         )
 
