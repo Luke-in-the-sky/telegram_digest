@@ -3,6 +3,7 @@ name: Daily Script
 on:
   schedule:
     - cron: '0 8 * * *'
+  workflow_dispatch:  # This allows the workflow to be manually triggered
 
 jobs:
   telegram-summary:
