@@ -36,7 +36,9 @@ def clean_string(s: str) -> str:
 
     return s.strip()
         
-def replace_urls_with_placeholder(text: str, placeholder="<URL>") -> str:
-    # Regular expression for matching URLs
-    url_pattern = r'https?://\S+|www\.\S+'
-    return re.sub(url_pattern, placeholder, text)
+# Compile the regular expression for matching URLs
+url_pattern = re.compile(r'https?://\S+|www\.\S+')
+
+def replace_urls_with_placeholder(text: str, placeholder="<URL>") -> str:  # TODO: check we are using this concsitently across the codebase
+    # Use the pre-compiled pattern to substitute URLs
+    return url_pattern.sub(placeholder, text)
