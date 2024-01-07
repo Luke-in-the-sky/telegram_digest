@@ -166,7 +166,10 @@ class TelegramMessagesParsing:
                 }
 
         entity = self.participants.get(sender_id)
-        name = entity.first_name or entity.username
+        if entity is None:
+            name = "<NoName>"
+        else:
+            name = entity.first_name or entity.username
         return name[:10]
 
     async def to_df(self, clean_strings=True):
