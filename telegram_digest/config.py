@@ -19,6 +19,7 @@ class AppConfig(BaseSettings):
     TARGET_CHAT_NAME: str = "Gemini Earn Users"
     END_DATE: datetime = datetime.now(ZoneInfo('America/Los_Angeles'))
     START_DATE: datetime = END_DATE - timedelta(days=1)
+    render_msg_upstream: bool = False
 
     # `BaseSettings` will attempt to load from environment
     # and form the .env file, if it exists (former takes precedence, t.ly/2hHDL)

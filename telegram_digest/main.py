@@ -27,7 +27,7 @@ async def main():
     telparser = TelegramMessagesParsing(
         tel_bot.core_api_client, tel_bot.target_chat_id, messages
     )
-    msgs_formatted = await telparser.to_list_of_formatted_messages(clean_strings=True)
+    msgs_formatted = await telparser.to_list_of_formatted_messages(clean_strings=True, render_upstreams=Config.render_msg_upstream)
 
     # get a summary
     poe = PoeBot(Config.POE_PB_TOKEN)

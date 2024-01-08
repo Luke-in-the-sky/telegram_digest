@@ -22,9 +22,15 @@ class MyLogger():
     self.logger.setLevel(logging.INFO)
 
 
-# string parsing and cleaning
+# Compile the regular expression for matching URLs
+url_pattern = re.compile(r'https?://\S+|www\.\S+')
 
-def clean_string(s: str) -> str:
+def replace_urls_with_placeholder(text: str, placeholder="<URL>") -> str:
+    # Use the pre-compiled pattern to substitute URLs
+    return url_pattern.sub(placeholder, text)
+
+# string parsing and cleaning
+def clean_string(s: str, replace_urls = True) -> str:
     # Remove emojis (it's just extra tokens for the LLM that are not helpful for our usecase)
     s = emoji.replace_emoji(s, replace="")
 
@@ -34,11 +40,9 @@ def clean_string(s: str) -> str:
     # Replace multiple spaces with a single space
     s = re.sub(r"\s+", " ", s)
 
+    # replace URLs with placeholder (so we save some tokens)
+    if replace_urls: 
+       s = replace_urls_with_placeholder(s)
+
     return s.strip()
         
-# Compile the regular expression for matching URLs
-url_pattern = re.compile(r'https?://\S+|www\.\S+')
-
-def replace_urls_with_placeholder(text: str, placeholder="<URL>") -> str:  # TODO: check we are using this concsitently across the codebase
-    # Use the pre-compiled pattern to substitute URLs
-    return url_pattern.sub(placeholder, text)

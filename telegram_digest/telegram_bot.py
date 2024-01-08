@@ -4,6 +4,7 @@ from telethon import TelegramClient
 from telethon.sessions import StringSession
 from config import Config
 from utils import MyLogger, clean_string, replace_urls_with_placeholder
+from pydantic_models import Message
 
 logger = MyLogger("bot").logger
 
@@ -151,6 +152,35 @@ class TelegramMessagesParsing:
         self.chat_id = chat_id
         self.client = client
         self.participants = None
+        self.digest_messages = None
+
+        logger.debug(f"{len(self.messages)=}")
+
+    async def _build_digest_messages(self, render_upstreams=True):
+        logger.info("Making Message objects...")
+        client = self.client
+
+        # build Message objects
+        msgs = [Message.from_telethon_message(x) for x in self.messages if x]
+        if render_upstreams:
+            logger.debug("  --> Fetching upstreams...")
+            # fetch any upstreams, ie those messages that the present messages are replying to
+            upstream_ids_to_be_fetched = {x.reply_to_msg_id for x in msgs if x.reply_to_msg_id}
+            async with client:
+                upstreams = await client.get_messages(entity=self.chat_id, ids=list(upstream_ids_to_be_fetched))
+            upstreams = {
+                u.id: Message.from_telethon_message(u).to_str()
+                for u in upstreams
+                if u
+            }
+
+            # Add the "reply_to" text to the messages
+            msgs = [x._set_reply_to_msg(upstreams.get(x.reply_to_msg_id)) for x in msgs]
+            
+        self.digest_messages = msgs
+        logger.debug(f"  {len(self.digest_messages)=}")
+        return self
+
 
     async def from_sender_id_to_name(self, sender_id: int) -> str:
         """
@@ -191,36 +221,19 @@ class TelegramMessagesParsing:
 
         if clean_strings:
             df = df.dropna()
-            df["msg_clean"] = df.msg.apply(replace_urls_with_placeholder).apply(clean_string)
+            df["msg_clean"] = df.msg.apply(clean_string(replace_urls=True))
             
         return df
 
-    async def to_list_of_formatted_messages(self, clean_strings=True) -> List[str]:
-        df = await self.to_df(clean_strings=clean_strings)
-        msg_list = (
-            df.sort_values(by="date", ascending=True)
-            .apply(
-                lambda x: f"[{x.sender_name}] {x.msg_clean}"
-                if len(x.msg_clean) > 0
-                else None,
-                axis=1,
-            )
-            .dropna()
-            .tolist()
-        )
-        return msg_list
+    async def to_list_of_formatted_messages(self, clean_strings=True, render_upstreams = True) -> List[str]:
+        if self.messages and len(self.messages) > 0 and self.digest_messages is None:
+            _ = await self._build_digest_messages(render_upstreams = render_upstreams)
 
-    async def to_single_str(self, clean_strings=True) -> str:
-        """
-        Represent the list of messages as one single (formatted) string
-        """
-        df = await self.to_df(clean_strings)
-        msgs_formatted = df.sort_values(by="date", ascending=True).apply(
-            lambda x: f"[{x.sender_name}] {x.msg_clean}"
-            if len(x.msg_clean) > 0
-            else None,
-            axis=1,
-        )
+        formatted_messages = [x.to_str() for x in self.digest_messages]
+        logger.debug(f"{len(formatted_messages)=}")
+        sample = '\n'.join(formatted_messages[:5])
+        logger.debug(f"Example formatted msgs: {sample}")
 
-        # collate all messages
-        return "\n".join(msgs_formatted.dropna())
+        if clean_strings:
+            formatted_messages = [clean_string(x, replace_urls=True) for x in formatted_messages]
+        return formatted_messages
