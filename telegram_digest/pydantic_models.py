@@ -42,7 +42,7 @@ class Message(BaseModel):
         if reply_to_msg_txt:
           if len(reply_to_msg_txt) > 50: 
              reply_to_msg_txt = reply_to_msg_txt[:47] + '...'
-          self.reply_to_msg = f'<Reply to `{reply_to_msg_txt}`>'
+          self.reply_to_msg = reply_to_msg_txt
 
         return self
 
