@@ -38,13 +38,17 @@ async def main():
     # send summary
     logger.info("## Sending summary to telegram")
     async with tel_bot.core_api_client:
-        message = f"""#AutoSummary: {Config.START_DATE.isoformat()[:10]}
+        message = f"""#AutoSummary: from {Config.START_DATE.isoformat()[:10]} to now.
 
         {summary}
 
         (Disclaimer: this is an auto-gen summary)
         """
-        await tel_bot.core_api_send_message("me", standardize_prompt(message))
+        await tel_bot.core_api_send_message(
+            # chat_id="me", 
+            chat_id=Config.TARGET_CHAT_NAME,
+            message=standardize_prompt(message),
+            )
 
 
 if __name__ == "__main__":
