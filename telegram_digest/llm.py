@@ -20,7 +20,17 @@ setup_statement = """
     The thread is formatted like this
     [<sender_name_a>] <message_text_1>
     [<sender_name_b>] <message_text_2>
-    ..."""
+    ...""".strip()
+
+guidelines = """
+    1. focus on information that is valuable to Earn Users, for example updates on 
+    the case developments or action steps that the Earn Users should take
+    2. disregard any message that is purely emotional venting or bickering with other users
+    3. format your summary as bullet-points
+    4. each bullet-point must be substantiated with quotes from the original extract
+    5. always refer to users by their names, never by generic "a user" or "another user"
+    6. Start directly with the bullet list, omitting any introductory text.
+    """.strip()
 
 prompt_template = """
     {setup_statement}
@@ -30,13 +40,8 @@ prompt_template = """
     ```
 
     Summarize the extract, ALWAYS following these guidelines:
-    1. focus on information that is valuable to Earn Users, for example updates on 
-    the case developments or action steps that the Earn Users should take
-    2. disregard any message that is purely emotional venting or bickering with other users
-    3. format your summary as bullet-points
-    4. each bullet-point must be substantiated with quotes from the original extract
-    5. always refer to users by their names, never by generic "a user" or "another user"
-    """
+    {guidelines}
+    """.strip()
 
 refine_template = """
     {setup_statement}
@@ -56,13 +61,8 @@ refine_template = """
     Your job is to produce a final summary: refine the original, if need be, 
     otherwise simply return the original summary.
     ALWAYS follow these guidelines:
-    1. focus on information that is valuable to Earn Users, for example updates on 
-    the case developments or action steps that the Earn Users should take
-    2. disregard any message that is purely emotional venting or bickering with other users
-    3. format your summary as bullet-points
-    4. each bullet-point must be substantiated with quotes from the original extract
-    5. always refer to users by their names, never by generic "a user" or "another user"
-  """
+    {guidelines}
+  """.strip()
 
 
 def standardize_prompt(txt):
@@ -100,7 +100,7 @@ class PoeBot:
         message = prompt_template.format(
             setup_statement=setup_statement, thread_content=convo_txt
         )
-        message = textwrap.dedent(message)
+        message = standardize_prompt(message)
 
         # Summarization strategy: stuff-it all in the context
         self.send_message(
@@ -131,7 +131,9 @@ class PoeBot:
             if i == 0:
                 # first message goes with the `prompt_template`
                 txt = prompt_template.format(
-                    setup_statement=setup_statement, thread_content=batch
+                    setup_statement=setup_statement,
+                    thread_content=batch,
+                    guidelines=guidelines,
                 )
             else:
                 # next messages go with the `refine_template`
@@ -139,6 +141,7 @@ class PoeBot:
                     setup_statement=setup_statement,
                     thread_content=batch,
                     existing_summary=running_summary,
+                    guidelines=guidelines,
                 )
             txt = standardize_prompt(txt)
 

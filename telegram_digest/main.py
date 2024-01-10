@@ -3,7 +3,7 @@ import asyncio
 from utils import MyLogger
 from config import Config
 from telegram_bot import TelegramBotBuilder, TelegramMessagesParsing
-from llm import PoeBot
+from llm import PoeBot, standardize_prompt
 from logging import DEBUG, INFO
 
 logger = MyLogger("bot").logger
@@ -38,11 +38,13 @@ async def main():
     # send summary
     logger.info("## Sending summary to telegram")
     async with tel_bot.core_api_client:
-        message = f"""Summary: {Config.START_DATE.isoformat()[:10]} - {Config.END_DATE.isoformat()[:10]}
+        message = f"""#AutoSummary: {Config.START_DATE.isoformat()[:10]}
 
         {summary}
+
+        (Disclaimer: this is an auto-gen summary)
         """
-        await tel_bot.core_api_send_message("me", textwrap.dedent(message))
+        await tel_bot.core_api_send_message("me", standardize_prompt(message))
 
 
 if __name__ == "__main__":
