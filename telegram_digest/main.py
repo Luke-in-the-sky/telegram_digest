@@ -45,8 +45,8 @@ async def main():
         (Disclaimer: this is an auto-gen summary)
         """
         await tel_bot.core_api_send_message(
-            # chat_id="me", 
-            chat_id=Config.TARGET_CHAT_NAME,
+            chat_id="me", 
+            # chat_id=Config.TARGET_CHAT_NAME,
             message=standardize_prompt(message),
             )
 
