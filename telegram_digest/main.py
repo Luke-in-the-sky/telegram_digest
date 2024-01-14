@@ -1,21 +1,25 @@
-import textwrap
 import asyncio
-from utils import MyLogger
+from utils import MyLogger, standardize_strings
 from config import Config
-from telegram_bot import TelegramBotBuilder, TelegramMessagesParsing
-from llm import PoeBot, standardize_prompt
+from telegram_bot import TelegramBotBuilder, TelegramMessagesParsing, SummaryRenderer
+from llm import PoeBot
 from logging import DEBUG, INFO
 
 logger = MyLogger("bot").logger
 logger.setLevel(DEBUG)
 
+
 async def main():
     # Build a Telegram client
-    tel_bot = TelegramBotBuilder(Config.TELEGRAM_BOT_TOKEN).with_core_api(
-        Config.TELEGRAM_API_ID,
-        Config.TELEGRAM_API_HASH,
-        api_session_str=Config.TELEGRAM_SESSION_STRING,
-    ).get_bot()
+    tel_bot = (
+        TelegramBotBuilder(Config.TELEGRAM_BOT_TOKEN)
+        .with_core_api(
+            Config.TELEGRAM_API_ID,
+            Config.TELEGRAM_API_HASH,
+            api_session_str=Config.TELEGRAM_SESSION_STRING,
+        )
+        .get_bot()
+    )
 
     # pull Telegram messages
     await tel_bot.set_target_chat_id(Config.TARGET_CHAT_NAME)
@@ -25,9 +29,12 @@ async def main():
 
     # process messages
     telparser = TelegramMessagesParsing(
-        tel_bot.core_api_client, tel_bot.target_chat_id, messages
+        tel_bot.core_api_client, tel_bot.target_chat_id, messages,
+        filter_out_autosum_messages=Config.filter_out_autosum_messages,
     )
-    msgs_formatted = await telparser.to_list_of_formatted_messages(clean_strings=True, render_upstreams=Config.render_msg_upstream)
+    msgs_formatted = await telparser.to_list_of_formatted_messages(
+        clean_strings=True, render_upstreams=Config.render_msg_upstream
+    )
 
     # get a summary
     poe = PoeBot(Config.POE_PB_TOKEN)
@@ -35,19 +42,12 @@ async def main():
         msgs_formatted, bot_name="a2", chatCode=Config.POE_CHAT_CODE, max_tokens=4000
     )
 
-    # send summary
-    logger.info("## Sending summary to telegram")
     async with tel_bot.core_api_client:
-        message = f"""#AutoSummary: from {Config.START_DATE.isoformat()[:10]} to now.
-
-        {summary}
-
-        (Disclaimer: this is an auto-gen summary)
-        """
-        await tel_bot.core_api_send_message(
-            chat_id="me", 
-            # chat_id=Config.TARGET_CHAT_NAME,
-            message=standardize_prompt(message),
+        for chat_name in Config.OUTPUT_CHAT_NAMES:
+            logger.info("## Sending summary to telegram chat `{chat_name}`")
+            await tel_bot.core_api_send_message(
+                chat_id=chat_name,
+                message=SummaryRenderer.format(summary),
             )
 
 

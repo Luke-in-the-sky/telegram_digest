@@ -1,7 +1,7 @@
 from typing import List
 from poe_api_wrapper import PoeApi
 import textwrap
-from utils import MyLogger
+from utils import MyLogger, standardize_strings
 import tiktoken
 import re
 from logging import DEBUG
@@ -65,14 +65,6 @@ refine_template = """
   """.strip()
 
 
-def standardize_prompt(txt):
-    """
-    Remove single newlines (like in Markdown syntax).
-    This allows for writing longer prompts in python with multiline strings
-    that wrap in the code, but are un-wrapped when sent to the LLM
-    """
-    txt = re.sub(r"(?i)(\w\s?)\n(\w\w)", r"\1 \2", txt)
-    return textwrap.dedent(txt)
 
 
 class PoeBot:
@@ -100,7 +92,7 @@ class PoeBot:
         message = prompt_template.format(
             setup_statement=setup_statement, thread_content=convo_txt
         )
-        message = standardize_prompt(message)
+        message = standardize_strings(message)
 
         # Summarization strategy: stuff-it all in the context
         self.send_message(
@@ -143,7 +135,7 @@ class PoeBot:
                     existing_summary=running_summary,
                     guidelines=guidelines,
                 )
-            txt = standardize_prompt(txt)
+            txt = standardize_strings(txt)
 
             # send txt to LLM
             if logger.isEnabledFor(DEBUG):

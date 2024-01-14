@@ -1,9 +1,15 @@
+import re
 from typing import List
 import pandas as pd
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 from config import Config
-from utils import MyLogger, clean_string, replace_urls_with_placeholder
+from utils import (
+    MyLogger,
+    clean_string,
+    standardize_strings,
+    replace_urls_with_placeholder,
+)
 from pydantic_models import Message
 
 logger = MyLogger("bot").logger
@@ -147,12 +153,13 @@ class TelegramMessagesParsing:
     Helper class to parse messages
     """
 
-    def __init__(self, client, chat_id, messages):
+    def __init__(self, client, chat_id, messages, filter_out_autosum_messages: bool=True):
         self.messages = messages
         self.chat_id = chat_id
         self.client = client
         self.participants = None
         self.digest_messages = None
+        self.filter_out_autosum_messages = filter_out_autosum_messages
 
         logger.debug(f"{len(self.messages)=}")
 
@@ -162,6 +169,12 @@ class TelegramMessagesParsing:
 
         # build Message objects
         msgs = [Message.from_telethon_message(x) for x in self.messages if x]
+
+        # optional: remove autosummary msgs
+        if self.filter_out_autosum_messages:
+            msgs = [x for x in msgs if not SummaryRenderer.is_autosummary(x.text)]
+
+        # optional: fetch upstreams
         if render_upstreams:
             logger.debug("  --> Fetching upstreams...")
             # fetch any upstreams, ie those messages that the present messages are replying to
@@ -222,7 +235,7 @@ class TelegramMessagesParsing:
 
         if clean_strings:
             df = df.dropna()
-            df["msg_clean"] = df.msg.apply(clean_string(replace_urls=True))
+            df["msg_clean"] = df.msg.apply(lambda x: clean_string(x, replace_urls=True))
 
         return df
 
@@ -246,3 +259,31 @@ class TelegramMessagesParsing:
                 clean_string(x, replace_urls=True) for x in formatted_messages
             ]
         return formatted_messages
+
+
+class SummaryRenderer:
+    """
+    Formatting strings for the auto-summary
+    and recognizing when a string is from the auto-summary
+    """
+
+    is_autosum_pattern = re.compile(
+        r"(?s)\#AutoSummary:.*\(Disclaimer: this is an auto-gen summary\)"
+    )
+
+    @staticmethod
+    def format(summary: str) -> str:
+        formatted = f"""#AutoSummary: from {Config.START_DATE.isoformat()[:10]} to now.
+
+        {summary}
+
+        (Disclaimer: this is an auto-gen summary)"""
+        return standardize_strings(formatted)
+
+    @classmethod
+    def is_autosummary(cls, msg: str) -> bool:
+        try:
+            return bool(re.match(cls.is_autosum_pattern, msg))
+        except TypeError as e:
+            if msg is None: return False
+            else: raise e
