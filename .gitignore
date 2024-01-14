@@ -3,3 +3,4 @@ __pycache__
 /myenv
 *.log
 .*
+/data_assets

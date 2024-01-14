@@ -29,11 +29,16 @@ async def main():
 
     # process messages
     telparser = TelegramMessagesParsing(
-        tel_bot.core_api_client, tel_bot.target_chat_id, messages,
+        tel_bot.core_api_client,
+        tel_bot.target_chat_id,
+        messages,
         filter_out_autosum_messages=Config.filter_out_autosum_messages,
     )
+
     msgs_formatted = await telparser.to_list_of_formatted_messages(
-        clean_strings=True, render_upstreams=Config.render_msg_upstream
+        clean_strings=True,
+        render_upstreams=Config.render_msg_upstream,
+        include_sender_name=Config.include_sender_name,
     )
 
     # get a summary
