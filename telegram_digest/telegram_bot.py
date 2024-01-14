@@ -165,22 +165,23 @@ class TelegramMessagesParsing:
         if render_upstreams:
             logger.debug("  --> Fetching upstreams...")
             # fetch any upstreams, ie those messages that the present messages are replying to
-            upstream_ids_to_be_fetched = {x.reply_to_msg_id for x in msgs if x.reply_to_msg_id}
+            upstream_ids_to_be_fetched = {
+                x.reply_to_msg_id for x in msgs if x.reply_to_msg_id
+            }
             async with client:
-                upstreams = await client.get_messages(entity=self.chat_id, ids=list(upstream_ids_to_be_fetched))
+                upstreams = await client.get_messages(
+                    entity=self.chat_id, ids=list(upstream_ids_to_be_fetched)
+                )
             upstreams = {
-                u.id: Message.from_telethon_message(u).to_str()
-                for u in upstreams
-                if u
+                u.id: Message.from_telethon_message(u).to_str() for u in upstreams if u
             }
 
             # Add the "reply_to" text to the messages
             msgs = [x._set_reply_to_msg(upstreams.get(x.reply_to_msg_id)) for x in msgs]
-            
+
         self.digest_messages = msgs
         logger.debug(f"  {len(self.digest_messages)=}")
         return self
-
 
     async def from_sender_id_to_name(self, sender_id: int) -> str:
         """
@@ -222,18 +223,26 @@ class TelegramMessagesParsing:
         if clean_strings:
             df = df.dropna()
             df["msg_clean"] = df.msg.apply(clean_string(replace_urls=True))
-            
+
         return df
 
-    async def to_list_of_formatted_messages(self, clean_strings=True, render_upstreams = True) -> List[str]:
+    async def to_list_of_formatted_messages(
+        self, clean_strings=True, render_upstreams=True, include_sender_name=True
+    ) -> List[str]:
         if self.messages and len(self.messages) > 0 and self.digest_messages is None:
-            _ = await self._build_digest_messages(render_upstreams = render_upstreams)
+            _ = await self._build_digest_messages(render_upstreams=render_upstreams)
 
-        formatted_messages = [x.to_str() for x in self.digest_messages]
+        formatted_messages = [
+            x.to_str(include_sender_name=include_sender_name)
+            for x in self.digest_messages
+        ]
+
         logger.debug(f"{len(formatted_messages)=}")
-        sample = '\n'.join(formatted_messages[:5])
+        sample = "\n".join(formatted_messages[:5])
         logger.debug(f"Example formatted msgs: {sample}")
 
         if clean_strings:
-            formatted_messages = [clean_string(x, replace_urls=True) for x in formatted_messages]
+            formatted_messages = [
+                clean_string(x, replace_urls=True) for x in formatted_messages
+            ]
         return formatted_messages

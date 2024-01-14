@@ -47,11 +47,11 @@ class Message(BaseModel):
         return self
 
 
-    def to_str(self):
+    def to_str(self, include_sender_name=True):
         # Format the output
         return ' '.join(x for x in [
             f'<Reply to `{self.reply_to_msg}`>' if self.reply_to_msg else None,
-            f'[{self.sender_name}]' if self.sender_name else None,
+            f'[{self.sender_name}]' if self.sender_name and include_sender_name else None,
             f'<{self.media}>' if self.media else None,
             self.text
             ] if x is not None)

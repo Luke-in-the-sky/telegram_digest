@@ -20,6 +20,7 @@ class AppConfig(BaseSettings):
     END_DATE: datetime = datetime.now(ZoneInfo('America/Los_Angeles'))
     START_DATE: datetime = END_DATE - timedelta(days=1)
     render_msg_upstream: bool = True
+    include_sender_name: bool = True
 
     # `BaseSettings` will attempt to load from environment
     # and form the .env file, if it exists (former takes precedence, t.ly/2hHDL)
