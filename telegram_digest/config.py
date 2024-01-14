@@ -18,7 +18,7 @@ class AppConfig(BaseSettings):
     # Other settings
     TARGET_CHAT_NAME: str = "Gemini Earn Users"
     # END_DATE: datetime = datetime(2024, 1, 12, tzinfo=ZoneInfo('America/Los_Angeles'))
-    END_DATE: datetime.now(ZoneInfo('America/Los_Angeles'))
+    END_DATE: datetime = datetime.now(ZoneInfo('America/Los_Angeles'))
     START_DATE: datetime = END_DATE - timedelta(days=1)
     OUTPUT_CHAT_NAMES: list = [
         "me", 
