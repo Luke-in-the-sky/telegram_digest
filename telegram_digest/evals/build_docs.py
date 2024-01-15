@@ -2,14 +2,13 @@ import asyncio
 import pandas as pd
 from pydantic_settings import BaseSettings
 from typing import Generator
-from sentence_transformers import SentenceTransformer
 from typing import List
 from config import Config
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from telegram_bot import TelegramBotBuilder, TelegramMessagesParsing
-from embedding_manager import EmbeddingManager
 from functools import lru_cache
+
 
 def update_config(
     start_date: datetime,
@@ -27,6 +26,7 @@ def update_config(
     config.include_sender_name = include_sender_name
 
     return config
+
 
 @lru_cache(maxsize=256)
 async def get_formatted_messages(Config) -> List[str]:
@@ -96,7 +96,7 @@ async def main():
 
     builder_configs = [
         DocBuilderSetup(
-            doc_builder_setup_name='testing',
+            doc_builder_setup_name="testing",
             start_date=end_date - timedelta(days=1),
             end_date=end_date,
             render_msg_upstream=render_msg_upstream,
@@ -128,21 +128,18 @@ async def main():
             setup.join_messages_separator,
         )
 
-        df = pd.DataFrame([
-            dict(
-                doc=doc,
-                **setup.model_dump(),
-            )
-            for doc in docs
-            ])
+        df = pd.DataFrame(
+            [
+                dict(
+                    doc=doc,
+                    **setup.model_dump(),
+                )
+                for doc in docs
+            ]
+        )
 
         df.to_pickle(f"./data_assets/docs_{setup.doc_builder_setup_name}.pkl")
 
 
-if __name__ == '__main__':
-  asyncio.run(main())
-# def embed_docs(docs: List[str]):
-#     # build embeddings
-#     sentence_model = SentenceTransformer("all-MiniLM-L6-v2")
-#     emb_manager = EmbeddingManager(filename="./data_assets/emb_storage.pkl")
-#     return emb_manager.get_embeddings(sentence_model=sentence_model, docs=docs)
+if __name__ == "__main__":
+    asyncio.run(main())
