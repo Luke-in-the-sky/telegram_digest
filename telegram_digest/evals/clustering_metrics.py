@@ -1,64 +1,50 @@
-from sklearn.metrics import (
-    silhouette_score,
-    davies_bouldin_score,
-    calinski_harabasz_score,
-)
+from sklearn.metrics import silhouette_score
 from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.preprocessing import LabelEncoder
 import numpy as np
-from typing import Dict, List
+from typing import Dict
+import hashlib
+
+# Global cache for distance matrices
+distance_matrix_cache = {}
+
+
+def array_hash(X):
+    return hashlib.sha256(X.data.tobytes()).hexdigest()
 
 
 def compute_clustering_metrics(
-    vectors: List, labels: List, distance_metric: str
+    X: np.array, labels: np.array, distance_metric: str, exclude_neg_labels: bool = True
 ) -> Dict[str, float]:
-    # Convert vectors and labels to numpy arrays
-    X = np.array(vectors)
-    labels = np.array(labels)
+    if exclude_neg_labels:
+        mask = labels >= 0
+        labels = labels[mask]
+        vectors = vectors[mask]
+
+    if len(set(labels)) < 2:
+        return {}
 
     # Encode labels to integers
     le = LabelEncoder()
     labels_encoded = le.fit_transform(labels)
 
     # Calculate pairwise distance matrix
-    distance_matrix = pairwise_distances(X, metric=distance_metric)
+    X_hash = array_hash(X)
+    try:
+        distance_matrix = distance_matrix_cache[X_hash]
+    except KeyError:
+        distance_matrix = pairwise_distances(X, metric=distance_metric)
+        distance_matrix_cache[X_hash] = distance_matrix
 
     # Compute metrics
     silhouette_avg = silhouette_score(
         distance_matrix, labels_encoded, metric="precomputed"
     )
-    davies_bouldin = davies_bouldin_score(X, labels_encoded)
-    calinski_harabasz = calinski_harabasz_score(X, labels_encoded)
 
-    # Compute Within-Cluster Sum of Squares
-    unique_labels = np.unique(labels_encoded)
-    wcss = sum(
-        np.sum(distance_matrix[labels_encoded == label, :], axis=1)
-        for label in unique_labels
-    )
+    # if centroids are meaningful, we could also use
+    # davies_bouldin = davies_bouldin_score(X, labels_encoded)
+    # calinski_harabasz = calinski_harabasz_score(X, labels_encoded)
 
     return {
         "silhouette_coefficient": silhouette_avg,
-        "davies-bouldin_index": davies_bouldin,
-        "calinski-Harabasz_index": calinski_harabasz,
-        "within-cluster_sum_of_squares": wcss,
     }
-
-
-# # Example usage
-# sample_to_vector = {
-#     1: [1.0, 2.0],
-#     2: [2.0, 3.0],
-#     3: [3.0, 4.0],
-#     4: [5.0, 6.0]
-# }
-# sample_to_cluster = {
-#     1: 0,
-#     2: 0,
-#     3: 1,
-#     4: 1
-# }
-# distance_metric = 'euclidean'
-
-# metrics = compute_clustering_metrics(sample_to_vector, sample_to_cluster, distance_metric)
-# print(metrics)

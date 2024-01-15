@@ -1,14 +1,21 @@
+import asyncio
+import pandas as pd
+from pydantic_settings import BaseSettings
+from typing import Generator
 from sentence_transformers import SentenceTransformer
-from typing import List, Iterable
+from typing import List
 from config import Config
-
-from config import Config
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from telegram_bot import TelegramBotBuilder, TelegramMessagesParsing
 from embedding_manager import EmbeddingManager
-
+from functools import lru_cache
 
 def update_config(
-    start_date: str, end_date: str, render_msg_upstream: bool, include_sender_name: bool
+    start_date: datetime,
+    end_date: datetime,
+    render_msg_upstream: bool,
+    include_sender_name: bool,
 ) -> Config:
     # Create an instance of the Config class
     config = Config()
@@ -21,7 +28,7 @@ def update_config(
 
     return config
 
-
+@lru_cache(maxsize=256)
 async def get_formatted_messages(Config) -> List[str]:
     # Build a Telegram client
     tel_bot = (
@@ -54,44 +61,88 @@ async def get_formatted_messages(Config) -> List[str]:
 
 
 # Function to join messages
-def join_messages(messages, n, overlap, separator):
-    joined_messages = []
+def join_messages(
+    messages: List[str], n: int, overlap: int, separator: str
+) -> Generator[str, None, None]:
     i = 0
     while i < len(messages):
         # Calculate the end index for slicing
         end = min(i + n, len(messages))
-        # Join the messages and add to the list
-        joined_messages.append(separator.join(messages[i:end]))
+
+        # Yield the joined message
+        yield separator.join(messages[i:end])
+
         # Move the index, considering the overlap
         i = end - overlap if (end - overlap) > i else end
-    return joined_messages
 
 
-async def build_docs_and_embeddings(
-    start_date: str,
-    end_date: str,
-    render_msg_upstream: bool,
-    include_sender_name: bool,
-    join_messages_n: int,
-    join_messages_overlap: int,
-    join_messages_separator: str = "\n",
-) -> Iterable[Iterable]:
-    # Example usage
-    Config = update_config(
-        start_date,
-        end_date,
-        render_msg_upstream,
-        include_sender_name=include_sender_name,
-    )
+class DocBuilderSetup(BaseSettings):
+    doc_builder_setup_name: str
+    start_date: datetime
+    end_date: datetime
+    render_msg_upstream: bool
+    include_sender_name: bool
+    join_messages_n: int
+    join_messages_overlap: int
+    join_messages_separator: str = "\n"
 
-    msgs_formatted = await get_formatted_messages(Config)
 
-    # build text documents
-    docs = join_messages(
-        msgs_formatted, join_messages_n, join_messages_overlap, join_messages_separator
-    )
+async def main():
+    end_dates = [
+        datetime(2024, 1, 12, tzinfo=ZoneInfo("America/Los_Angeles")),
+        datetime(2023, 11, 2, tzinfo=ZoneInfo("America/Los_Angeles")),
+    ]
+    join_messages_n_values = [1, 5]
 
-    # build embeddings
-    sentence_model = SentenceTransformer("all-MiniLM-L6-v2")
-    emb_manager = EmbeddingManager(filename="./data_assets/emb_storage.pkl")
-    return emb_manager.get_embeddings(sentence_model=sentence_model, docs=docs)
+    builder_configs = [
+        DocBuilderSetup(
+            doc_builder_setup_name='testing',
+            start_date=end_date - timedelta(days=1),
+            end_date=end_date,
+            render_msg_upstream=render_msg_upstream,
+            include_sender_name=join_messages_n > 1 or render_msg_upstream,
+            join_messages_n=join_messages_n,
+            join_messages_overlap=0,
+            join_messages_separator="\n",
+        )
+        for end_date in end_dates
+        for render_msg_upstream in [True]
+        for join_messages_n in join_messages_n_values
+    ]
+
+    for setup in builder_configs:
+        Config = update_config(
+            setup.start_date,
+            setup.end_date,
+            setup.render_msg_upstream,
+            include_sender_name=setup.include_sender_name,
+        )
+
+        msgs_formatted = await get_formatted_messages(Config)
+
+        # yield text documents
+        docs = join_messages(
+            msgs_formatted,
+            setup.join_messages_n,
+            setup.join_messages_overlap,
+            setup.join_messages_separator,
+        )
+
+        df = pd.DataFrame([
+            dict(
+                doc=doc,
+                **setup.model_dump(),
+            )
+            for doc in docs
+            ])
+
+        df.to_pickle(f"./data_assets/docs_{setup.doc_builder_setup_name}.pkl")
+
+
+if __name__ == '__main__':
+  asyncio.run(main())
+# def embed_docs(docs: List[str]):
+#     # build embeddings
+#     sentence_model = SentenceTransformer("all-MiniLM-L6-v2")
+#     emb_manager = EmbeddingManager(filename="./data_assets/emb_storage.pkl")
+#     return emb_manager.get_embeddings(sentence_model=sentence_model, docs=docs)
