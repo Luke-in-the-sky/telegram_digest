@@ -1,13 +1,15 @@
+from pathlib import Path
 import asyncio
 import pandas as pd
 from pydantic_settings import BaseSettings
 from typing import Generator
 from typing import List
 from config import Config
+from telegram_bot import TelegramBotBuilder, TelegramMessagesParsing
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
-from telegram_bot import TelegramBotBuilder, TelegramMessagesParsing
-from functools import lru_cache
+
+DOCS_OUTPUT_FOLDER = Path("./data_assets/")
 
 
 def update_config(
@@ -17,7 +19,7 @@ def update_config(
     include_sender_name: bool,
 ) -> Config:
     # Create an instance of the Config class
-    config = Config()
+    config = Config
 
     # Update the START_DATE, END_DATE, and render_msg_upstream
     config.START_DATE = start_date
@@ -28,7 +30,7 @@ def update_config(
     return config
 
 
-@lru_cache(maxsize=256)
+# TODO: cache (note: can't use lru_cache , unhashable type: 'AppConfig' )
 async def get_formatted_messages(Config) -> List[str]:
     # Build a Telegram client
     tel_bot = (
@@ -110,7 +112,9 @@ async def main():
         for join_messages_n in join_messages_n_values
     ]
 
+    docs_with_configs = []
     for setup in builder_configs:
+        print(setup.model_dump())
         Config = update_config(
             setup.start_date,
             setup.end_date,
@@ -138,7 +142,17 @@ async def main():
             ]
         )
 
-        df.to_pickle(f"./data_assets/docs_{setup.doc_builder_setup_name}.pkl")
+        docs_with_configs.append(df)
+
+    folder = DOCS_OUTPUT_FOLDER
+    if not folder.exists():
+        folder.mkdir()
+
+    file_name = f"docs_{setup.doc_builder_setup_name}.pkl"
+    file_path = folder / file_name
+
+    print("saving")
+    pd.concat(docs_with_configs).to_pickle(file_path)
 
 
 if __name__ == "__main__":

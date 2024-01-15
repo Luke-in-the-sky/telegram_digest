@@ -1,6 +1,6 @@
 import pickle
 from typing import Iterable, List, Union
-from utils import hash_this
+from eval_utils import hash_this
 
 
 class EmbeddingManager:
