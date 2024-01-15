@@ -22,7 +22,7 @@ class AppConfig(BaseSettings):
     START_DATE: datetime = END_DATE - timedelta(days=1)
     OUTPUT_CHAT_NAMES: list = [
         "me", 
-        # "Gemini Earn Users"
+        "Gemini Earn Users"
         ]
     
     # Rendering messages
