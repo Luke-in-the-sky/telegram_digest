@@ -4,3 +4,4 @@ __pycache__
 *.log
 .*
 /data_assets
+telegram_digest/data_assets
