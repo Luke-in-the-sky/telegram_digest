@@ -22,22 +22,17 @@ class EmbeddingManager:
         with open(filename, "wb") as file:
             pickle.dump(self.data, file)
 
-    def get_embeddings(self, embedding_model, docs: Union[str, Iterable[str]]) -> List:
+    def get_embeddings(self, embedding_model, model_name: str, docs: Union[str, Iterable[str]]) -> List:
         """
         Returns a list of embeddings for the given docs.
         If possible, pulls pre-computed embeddings from the local data
         """
-        try:
-            model_name = embedding_model.model_name
-        except AttributeError:
-            raise AttributeError("Model name attribute not found in embedding_model")
-
         if isinstance(docs, str):
             docs = [docs]
 
         # Generate a unique identifier
         hashes_to_index = {
-            hash_this([model_name, doc]): i for doc, i in enumerate(docs)
+            hash_this([model_name, doc]): i for i, doc in enumerate(docs)
         }
 
         # Check which documents already have embeddings in storage
