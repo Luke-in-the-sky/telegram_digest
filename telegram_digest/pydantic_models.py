@@ -12,7 +12,7 @@ class Message(BaseModel):
     @classmethod
     def from_telethon_message(cls, message: telethon.tl.patched.Message):
         # Extract sender's name
-        sender_name = message.sender.first_name
+        sender_name = message.sender.first_name or '<Unknown>'
 
         # Check if this is a reply to some other message
         reply_to_msg_id, reply_to_msg = None, None

@@ -23,7 +23,12 @@ def embed_docs(
 
 
 if __name__ == "__main__":
-    paths_to_docs_dataset = [DATA_ASSETS_FOLDER / "docs_testing.pkl"]
+    paths_to_docs_dataset = [
+        DATA_ASSETS_FOLDER / "docs_testing.pkl",
+        DATA_ASSETS_FOLDER / "docs_testing_2.pkl",
+        DATA_ASSETS_FOLDER / "docs_testing_3.pkl",
+        DATA_ASSETS_FOLDER / "docs_testing_4.pkl",
+        ]
     path_to_output_file = DATA_ASSETS_FOLDER / "docs_testing_emb.pkl"
 
     # Configure logging

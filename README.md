@@ -38,6 +38,7 @@ V1 can take arbitrary-length input and uses a refine-summary strategy to summari
      1. add "reply to.." to identify replies
      2. represent the reply-chains in a more structured form (eg all replies in the same chain are collected and represented together, instead of interleaved in the main thread)
 1. interactive: host the bot on heroku / fly.io, so I can interact with it via Telegram
+1. consolidate logging
 
 ## Code walkthough
 1. `main.py` is the entry point.

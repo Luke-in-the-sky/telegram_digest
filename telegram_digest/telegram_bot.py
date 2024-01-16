@@ -1,5 +1,5 @@
 import re
-from typing import List
+from typing import List, Iterable
 import pandas as pd
 from telethon import TelegramClient
 from telethon.sessions import StringSession
@@ -8,12 +8,13 @@ from utils import (
     MyLogger,
     clean_string,
     standardize_strings,
-    replace_urls_with_placeholder,  # TODO: optionally add back
 )
 from pydantic_models import Message
 
 logger = MyLogger("bot").logger
 
+
+# TODO: `replace_urls=True` should be configurable
 
 class TelegramBotBuilder:
     """
@@ -153,7 +154,7 @@ class TelegramMessagesParsing:
     Helper class to parse messages
     """
 
-    def __init__(self, client, chat_id, messages, filter_out_autosum_messages: bool=True):
+    def __init__(self, client, chat_id, messages: Iterable, filter_out_autosum_messages: bool=True):
         self.messages = messages
         self.chat_id = chat_id
         self.client = client
@@ -162,6 +163,8 @@ class TelegramMessagesParsing:
         self.filter_out_autosum_messages = filter_out_autosum_messages
 
         logger.debug(f"{len(self.messages)=}")
+        if self.messages is None or len(self.messages) == 0:
+            logger.warning(f"No messages passed to {self.__class__.__name__}")
 
     async def _build_digest_messages(self, render_upstreams=True):
         logger.info("Making Message objects...")
@@ -247,18 +250,17 @@ class TelegramMessagesParsing:
 
         formatted_messages = [
             x.to_str(include_sender_name=include_sender_name)
-            for x in self.digest_messages
+            for x in self.digest_messages or []
         ]
 
         logger.debug(f"{len(formatted_messages)=}")
-        sample = "\n".join(formatted_messages[:5])
-        logger.debug(f"Example formatted msgs: {sample}")
+        logger.debug(f"Example formatted msgs: {'|'.join(formatted_messages[:5])}")
 
         if clean_strings:
             formatted_messages = [
                 clean_string(x, replace_urls=True) for x in formatted_messages
             ]
-        return formatted_messages
+        return [x for x in formatted_messages if x and len(x)>0]
 
 
 class SummaryRenderer:

@@ -1,4 +1,4 @@
-from pathlib import Path
+from tqdm import tqdm
 import asyncio
 import pandas as pd
 from pydantic_settings import BaseSettings
@@ -29,7 +29,7 @@ def update_config(
     return config
 
 
-# TODO: cache (note: can't use lru_cache , unhashable type: 'AppConfig' )
+# TODO: cache the ppiece that calls telegram (note: can't use lru_cache , unhashable type: 'AppConfig' )
 async def get_formatted_messages(Config) -> List[str]:
     # Build a Telegram client
     tel_bot = (
@@ -90,29 +90,39 @@ class DocBuilderSetup(BaseSettings):
 
 async def main():
     end_dates = [
-        datetime(2024, 1, 12, tzinfo=ZoneInfo("America/Los_Angeles")),
-        datetime(2023, 11, 2, tzinfo=ZoneInfo("America/Los_Angeles")),
+        # datetime(2024, 1, 12, tzinfo=ZoneInfo("America/Los_Angeles")),
+        # datetime(2023, 11, 2, tzinfo=ZoneInfo("America/Los_Angeles")),
+                
+        datetime(2023, 10, 1, tzinfo=ZoneInfo("America/Los_Angeles")),
+        datetime(2023, 8, 29, tzinfo=ZoneInfo("America/Los_Angeles")),
+        datetime(2023, 8, 18, tzinfo=ZoneInfo("America/Los_Angeles")),
+        datetime(2023, 3, 6, tzinfo=ZoneInfo("America/Los_Angeles")),
+        datetime(2023, 4, 19, tzinfo=ZoneInfo("America/Los_Angeles")),
+        datetime(2023, 9, 11, tzinfo=ZoneInfo("America/Los_Angeles")),
+        datetime(2023, 4, 25, tzinfo=ZoneInfo("America/Los_Angeles")),
+        datetime(2023, 9, 13, tzinfo=ZoneInfo("America/Los_Angeles")),
     ]
-    join_messages_n_values = [1, 5]
+    join_messages_n_values = [1, 5, 10]
 
     builder_configs = [
         DocBuilderSetup(
-            doc_builder_setup_name="testing",
+            doc_builder_setup_name="testing_4",
             start_date=end_date - timedelta(days=1),
             end_date=end_date,
             render_msg_upstream=render_msg_upstream,
-            include_sender_name=join_messages_n > 1 or render_msg_upstream,
+            include_sender_name=incl_sendr,
             join_messages_n=join_messages_n,
             join_messages_overlap=0,
             join_messages_separator="\n",
         )
         for end_date in end_dates
-        for render_msg_upstream in [True]
+        for render_msg_upstream in [True, False]
         for join_messages_n in join_messages_n_values
+        for incl_sendr in [True, False]
     ]
 
     docs_with_configs = []
-    for setup in builder_configs:
+    for setup in tqdm(builder_configs):
         print(setup.model_dump())
         Config = update_config(
             setup.start_date,

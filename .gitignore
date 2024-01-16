@@ -1,7 +1,6 @@
 *.env
-__pycache__
-/myenv
 *.log
 .*
-/data_assets
-telegram_digest/data_assets
+__pycache__
+/myenv
+/telegram_digest/data_assets
