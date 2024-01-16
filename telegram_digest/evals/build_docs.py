@@ -8,8 +8,7 @@ from config import Config
 from telegram_bot import TelegramBotBuilder, TelegramMessagesParsing
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
-
-DOCS_OUTPUT_FOLDER = Path("./data_assets/")
+from evals import DATA_ASSETS_FOLDER
 
 
 def update_config(
@@ -144,12 +143,8 @@ async def main():
 
         docs_with_configs.append(df)
 
-    folder = DOCS_OUTPUT_FOLDER
-    if not folder.exists():
-        folder.mkdir()
-
     file_name = f"docs_{setup.doc_builder_setup_name}.pkl"
-    file_path = folder / file_name
+    file_path = DATA_ASSETS_FOLDER / file_name
 
     print("saving")
     pd.concat(docs_with_configs).to_pickle(file_path)
