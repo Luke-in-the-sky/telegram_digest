@@ -1,3 +1,4 @@
+from pathlib import Path
 import matplotlib.pyplot as plt
 import logging
 import pandas as pd
@@ -27,7 +28,6 @@ class Explainer(BaseModel, ABC):
     class Config:
         arbitrary_types_allowed = True  # Allow arbitrary types
 
-
     @validator("dependent_var")
     def dependent_var_must_be_in_df(cls, v, values):
         if "df" in values and v not in values["df"].columns:
@@ -35,17 +35,17 @@ class Explainer(BaseModel, ABC):
         return v
 
     @abstractmethod
-    def train_model(self) -> 'Explainer':
+    def train_model(self) -> "Explainer":
         """Method to train a model; must be implemented by subclasses."""
         pass
 
-    def explain_and_plot(self, filepath=None) -> 'Explainer':
+    def explain_and_plot(self, filepath: Path = None) -> "Explainer":
         """Use the trained model to create explainations and plots"""
         pass
 
 
 class LinearGAMExplainer(Explainer):
-    def train_model(self) -> 'LinearGAMExplainer':
+    def train_model(self) -> "LinearGAMExplainer":
         """
         Fit a Generalized Additive Model to the DataFrame with a spline for each independent variable.
         """
@@ -69,7 +69,7 @@ class LinearGAMExplainer(Explainer):
 
         return self
 
-    def explain_and_plot(self, filepath=None) -> 'LinearGAMExplainer':
+    def explain_and_plot(self, filepath=None) -> "LinearGAMExplainer":
         """
         Create a grid of partial dependence plots for each independent variable in the model.
         """
@@ -138,7 +138,7 @@ class LinearGAMExplainer(Explainer):
 
 
 class XGBoostExplainer(Explainer):
-    def train_model(self) -> 'XGBoostExplainer':
+    def train_model(self) -> "XGBoostExplainer":
         """
         Trains an XGBoost model, evaluates it using standard metrics and checks for overfitting.
         """
@@ -208,10 +208,11 @@ class XGBoostExplainer(Explainer):
             metrics_test=metrics_test,
             metrics_train=metrics_train,
         )
+        print("XBoost model trained. Metrics: ", self.metrics)
 
         return self
 
-    def explain_and_plot(self, filepath=None) -> 'XGBoostExplainer':
+    def explain_and_plot(self, filepath=None) -> "XGBoostExplainer":
         """
         Performs SHAP analysis on the given XGBoost model and feature data.
         """
@@ -221,14 +222,24 @@ class XGBoostExplainer(Explainer):
         # SHAP values and plot
         explainer = shap.Explainer(self.model)
         shap_values = explainer(X)
-        shap.summary_plot(shap_values, X, feature_names=feature_names)
-        # Save the plot if a filepath is provided
-        if filepath:
-            plt.savefig(filepath)
+        shap_values.feature_names = feature_names
 
-        # Show the plot graphically
-        plt.show()
+        # List of SHAP plot functions
+        for plot_func in [shap.plots.beeswarm, shap.plots.bar]:
+            # Create the plot
+            plot_func(shap_values, show=False,  max_display=10)
+
+            # Construct the filename based on the plot function name
+            if filepath:
+                plot_type = plot_func.__name__
+                new_filename = (
+                    filepath.parent / f"{filepath.stem}_{plot_type}{filepath.suffix}"
+                )
+                plt.savefig(new_filename)
+
+            plt.show()
+
 
         self.explainer = explainer
-    
+
         return self

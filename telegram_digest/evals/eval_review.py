@@ -51,7 +51,7 @@ def main():
             df=df, independent_vars=independent_vars, dependent_var=dependent_var
         )
         .train_model()
-        .explain_and_plot(filepath=DATA_ASSETS_FOLDER / "XGBoost_Expl.svg")
+        .explain_and_plot(filepath=DATA_ASSETS_FOLDER / "XGBoost_Expl.png")
     )
 
 
