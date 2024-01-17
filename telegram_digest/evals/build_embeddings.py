@@ -1,9 +1,10 @@
 import pandas as pd
-from evals.embedding_manager import EmbeddingManager
+from .embedding_manager import EmbeddingManager
 from sentence_transformers import SentenceTransformer
 from typing import List
 import logging
-from evals import DATA_ASSETS_FOLDER
+from . import DATA_ASSETS_FOLDER, DATASET_WITH_EMBEDDINGS_FILE
+from .eval_utils import logging_setup
 
 
 def embed_docs(
@@ -29,18 +30,11 @@ if __name__ == "__main__":
         DATA_ASSETS_FOLDER / "docs_testing_3.pkl",
         DATA_ASSETS_FOLDER / "docs_testing_4.pkl",
         ]
-    path_to_output_file = DATA_ASSETS_FOLDER / "docs_testing_emb.pkl"
 
     # Configure logging
-    logging.basicConfig(
-        # level=logging.INFO,
-        level=logging.DEBUG,
-        # datefmt='%Y-%m-%d %H:%M:%S',
-        datefmt="%H:%M:%S",
-        format="%(asctime)s %(levelname)s |%(name)s| %(message)s",
-        handlers=[logging.FileHandler("logfile.log"), logging.StreamHandler()],
-    )
+    logging_setup()
     logging.info("Starting")
+    logging.debug(f"loading from these paths: {paths_to_docs_dataset}")
 
     # run
     df = pd.concat([pd.read_pickle(fp) for fp in paths_to_docs_dataset])
@@ -52,6 +46,6 @@ if __name__ == "__main__":
 
     assert len(emb) == len(df), f"len(emb)={len(emb)}!= len(df)={len(df)}"
     df["embedding"] = emb
-    logging.info(f"Saving to {path_to_output_file}")
-    df.to_pickle(path_to_output_file)
+    logging.info(f"Saving to {DATASET_WITH_EMBEDDINGS_FILE}")
+    df.to_pickle(DATASET_WITH_EMBEDDINGS_FILE)
     logging.info("Done")

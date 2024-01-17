@@ -3,4 +3,5 @@
 .*
 __pycache__
 /myenv
-/telegram_digest/data_assets
+/telegram_digest/evals/data_assets
+/wandb
