@@ -102,7 +102,7 @@ async def main():
         datetime(2023, 4, 25, tzinfo=ZoneInfo("America/Los_Angeles")),
         datetime(2023, 9, 13, tzinfo=ZoneInfo("America/Los_Angeles")),
     ]
-    join_messages_n_values = [1, 5, 10]
+    join_messages_n_values = [3, 7, 15]
 
     builder_configs = [
         DocBuilderSetup(

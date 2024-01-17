@@ -1,4 +1,4 @@
-from typing import Generator, List, Dict, Tuple
+from typing import Generator, List, Dict, Tuple, Optional
 import pandas as pd
 import numpy as np
 from umap import UMAP
@@ -18,7 +18,11 @@ sweep_config_bayes = {
     "parameters": {
         "umap_n_neighbors": {"min": 5, "max": 50},
         "umap_min_dist": {"min": 0.0, "max": 1.0},
-        "hdbscan_min_cluster_size": {"min": 5, "max": 50},
+        "umap_n_components": {"min": 2, "max": 8},
+        "hdbscan_min_cluster_size": {"min": 5, "max": 30},
+        "hdbscan_min_samples": {"min": 1, "max": 30},
+        "hdbscan_cluster_selection_epsilon": {"min": 0.0, "max": 0.5},
+        "hdbscan_alpha": {"min": 0.5, "max": 1.5},
         # Add other parameters here
     },
 }
@@ -64,6 +68,40 @@ def load_embeddings(
         yield setup, embs
 
 
+def compute_cluster_distribution(labels) -> Optional[Dict[str, float]]:
+    """
+    Compute the distribution of cluster sizes from a list of cluster labels.
+    Exclude the noise label (-1) from the calculation.
+
+    Parameters:
+    labels (list or array): Cluster labels.
+
+    Returns:
+    dict: Dictionary with min, 5th percentile, median, average, 95th percentile.
+    """
+    # Filter out the noise (label = -1)
+    filtered_labels = labels[labels != -1]
+
+    # Check if the filtered array is empty
+    if filtered_labels.size == 0:
+        logging.debug("No valid clusters found (all labels are -1 or input is empty).")
+        return None
+
+    # Count the number of samples in each cluster
+    unique, counts = np.unique(filtered_labels, return_counts=True)
+
+    # Calculate the required statistics
+    distribution = {
+        "min": np.min(counts),
+        "5th_perc": np.percentile(counts, 5),
+        "median": np.median(counts),
+        "average": np.mean(counts),
+        "95th_perc": np.percentile(counts, 95),
+    }
+
+    return {f"cluster_distribution_{k}": v for k, v in distribution.items()}
+
+
 def cluster_and_eval(
     embeddings: np.array, umap_params: dict, hdbscan_params: dict
 ) -> dict:
@@ -71,6 +109,15 @@ def cluster_and_eval(
     logging.debug(f"Reducing dimensions: {reduced_emb.shape=}")
 
     clusterer = hdbscan.HDBSCAN(**hdbscan_params).fit(reduced_emb)
+    num_clusters = len(np.unique(clusterer.labels_))
+    num_samples_in_minus_1_cluster = (
+        np.sum(clusterer.labels_ == -1) if -1 in clusterer.labels_ else None
+    )
+    pct_samples_in_minus_1_cluster = (
+        num_samples_in_minus_1_cluster * 1.0 / embeddings.shape[0]
+        if num_samples_in_minus_1_cluster
+        else None
+    )
     logging.debug(f"Clustering: {clusterer.labels_.shape=}")
 
     metrics = compute_clustering_metrics(
@@ -79,7 +126,18 @@ def cluster_and_eval(
         distance_metric="cosine",
         exclude_neg_labels=True,
     )
-    logging.info(f"{metrics}")
+    metrics.update(
+        {
+            "num_clusters": num_clusters,
+            "num_samples_in_minus_1_cluster": num_samples_in_minus_1_cluster,
+            "pct_samples_in_minus_1_cluster": pct_samples_in_minus_1_cluster,
+            "num_of_samples": len(embeddings),
+        }
+    )
+    if num_clusters > 1:
+        metrics.update(**compute_cluster_distribution(clusterer.labels_))
+
+    logging.debug(f"{metrics=}")
 
     return metrics
 
@@ -89,7 +147,9 @@ def sweep_run():
         # Retrieve hyperparameters
         config = wandb.config
         umap_params = {
-            k.replace("umap_", ""): v for k, v in config.items() if k.startswith("umap_")
+            k.replace("umap_", ""): v
+            for k, v in config.items()
+            if k.startswith("umap_")
         }
         hdbscan_params = {
             k.replace("hdbscan_", ""): v
@@ -98,6 +158,8 @@ def sweep_run():
         }
 
         # Load embeddings
+        # list the complete set of columns that identifies a dataset
+        # TODO: this should be exposed further out
         group_by_cols = [
             "render_msg_upstream",
             "include_sender_name",
@@ -105,18 +167,20 @@ def sweep_run():
             "join_messages_overlap",
         ]
 
-        logging.info("Starting emb loop")
         for dataset_setup, embeddings in load_embeddings(
             DATASET_WITH_EMBEDDINGS_FILE, group_by_cols
         ):
             metrics = cluster_and_eval(
                 embeddings, umap_params=umap_params, hdbscan_params=hdbscan_params
             )
-            # metrics = {
-            #     "silhouette_coefficient": -2,
-            # }
 
-            output = {**dataset_setup, **metrics}
+            clustering_params = {
+                k: v
+                for k, v in config.items()
+                if k.startswith("umap_") or k.startswith("hdbscan_")
+            }
+
+            output = {**dataset_setup, **metrics, **clustering_params}
             logging.info(f"Output from Run: {output}")
             wandb.log(output)
 
