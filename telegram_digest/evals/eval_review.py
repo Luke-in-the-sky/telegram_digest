@@ -4,6 +4,10 @@ import pickle
 from pygam import LinearGAM, s  # pip install pygam
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
+from . import DATA_ASSETS_FOLDER, SWEEP_RESULTS_FILE
+import logging
+from .eval_utils import logging_setup
+import json
 
 
 def extract_dicts_from_log(file_path):
@@ -61,10 +65,15 @@ def plot_partial_dependence(gam, df, independent_vars, filepath=None):
     independent_vars (list): List of independent variable names.
     """
     num_vars = len(independent_vars)
-    cols = 2  # Adjust the number of columns as per preference
+    cols = 3  # Adjust the number of columns as per preference
     rows = (num_vars + cols - 1) // cols  # Calculate required number of rows
 
-    fig = make_subplots(rows=rows, cols=cols, subplot_titles=independent_vars)
+    fig = make_subplots(
+        rows=rows,
+        cols=cols,
+        # showlegend=False,
+        subplot_titles=[f"{i}-{var}" for i, var in enumerate(independent_vars)],
+    )
 
     for i, var in enumerate(independent_vars, start=1):
         XX = gam.generate_X_grid(term=i - 1)
@@ -74,9 +83,7 @@ def plot_partial_dependence(gam, df, independent_vars, filepath=None):
         col = (i - 1) % cols + 1
 
         # Create a plot for each variable
-        trace = go.Scatter(
-            x=XX[:, i - 1], y=pdep, mode="lines", name=f"Partial Dependence for {var}"
-        )
+        trace = go.Scatter(x=XX[:, i - 1], y=pdep, mode="lines", name=f"{i}-{var}")
         fig.add_trace(trace, row=row, col=col)
 
         # Add confidence interval
@@ -108,50 +115,56 @@ def plot_partial_dependence(gam, df, independent_vars, filepath=None):
     if filepath:
         fig.write_html(filepath)
         print(f"Plot saved to {filepath}")
-    else:
-        fig.show()
+    fig.show()
 
 
 def main():
-    log_file_path = "logfile.log"
-    output_file_path = "df_sweep.pkl"
+    output_file_path = DATA_ASSETS_FOLDER / "df_sweep.pkl"
 
-    # Extract dictionaries from log file
-    extracted_dicts = extract_dicts_from_log(log_file_path)
+    # load the results form the eval run
+    with open(SWEEP_RESULTS_FILE, 'r') as file:
+        metrics_data = [json.loads(line) for line in file]
 
-    # Convert to DataFrame
-    df = pd.DataFrame(extracted_dicts)
-    df.query("silhouette_coefficient > -1", inplace=True)
+    df = pd.DataFrame(metrics_data).query("num_clusters > 1")
+    nulls_to_zero_cols = [
+        "num_samples_in_minus_1_cluster",
+        "pct_samples_in_minus_1_cluster",
+    ]
+    df[nulls_to_zero_cols] = df[nulls_to_zero_cols].fillna(0)
+    logging.debug(f"Filtered the Eval runs: {len(metrics_data)=}, {len(df)=}")
 
     # Save DataFrame to pickle file
     with open(output_file_path, "wb") as file:
         pickle.dump(df, file)
-
-    print(f"DataFrame saved to {output_file_path}")
+    logging.info(f"DataFrame saved to {output_file_path}")
 
     # Example usage of fit_gam
     independent_vars = [
-        "hdbscan_alpha",
-        "hdbscan_cluster_selection_epsilon",
-        "hdbscan_min_cluster_size",
+        # "hdbscan_alpha",
+        # "hdbscan_cluster_selection_epsilon",
+        # "hdbscan_min_cluster_size",
         "hdbscan_min_samples",
         "umap_min_dist",
         "umap_n_components",
-        "umap_n_neighbors",
-        "render_msg_upstream",
+        # "umap_n_neighbors",
+        # "render_msg_upstream",
         "include_sender_name",
         "join_messages_n",
-        "join_messages_overlap",
+        # "join_messages_overlap",
         "num_of_samples",
     ]
     gam_model = fit_gam(df, independent_vars, dependent_var="silhouette_coefficient")
 
     # You can now use gam_model for predictions, plotting, etc.
-    print(gam_model.summary())
+    gam_summary = gam_model.summary()
+    print(gam_summary)
+    with open(DATA_ASSETS_FOLDER / "gam_model.txt", "w") as file:
+        file.write(gam_summary)
 
     # Plotting Partial Dependence
-    plot_partial_dependence(gam_model, df, independent_vars)
+    plot_partial_dependence(gam_model, df, independent_vars, filepath=DATA_ASSETS_FOLDER/"plot.png")
 
 
 if __name__ == "__main__":
+    logging_setup()
     main()

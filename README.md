@@ -40,6 +40,15 @@ V1 can take arbitrary-length input and uses a refine-summary strategy to summari
 1. interactive: host the bot on heroku / fly.io, so I can interact with it via Telegram
 1. consolidate logging
 
+### Evals: completeness
+- **Problem**: there is no easy way to get a measurement on "completeness" of the summary
+- **A solution**: topic-modeling. Extract the list of topics, compare the summary to the list of topics.
+- **Challenges**:
+  - we can play with how the text is represented (lengths of chunks, overlaps, with/without replies,..) and how it's clustered (umap and hdbscan params), but it's not obvious how to compare different settings
+  - proxy: silhouette-coefficient, computed in the text-embeddings space (not in the reduced-dimensionality of umap's output), using cosine-similarity as distance metric (this is what `evals.eval_run`` and `evals.clustering_metrics` do)
+    - pros: easy to computue and interpret
+    - cons: technically, silhouette is ok for comparing clustering over the same set of embedded points (so we can vary the clustering parameters, for instace), but it's not clear that we can compare across different set of points (ie vary the message representaion like chunck-lenghts and overlaps).
+
 ## Code walkthough
 1. `main.py` is the entry point.
 1. `telegram_bot.py` handles creating of a Telegram client (`TelegramBotBuilder`), pulling history and sending messages (`TelegramBot`) and message-data munging (`TelegramMessagesParsing`)

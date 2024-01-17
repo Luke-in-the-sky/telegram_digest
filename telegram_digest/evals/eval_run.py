@@ -5,9 +5,10 @@ from umap import UMAP
 import hdbscan
 from .clustering_metrics import compute_clustering_metrics
 import wandb
-from . import DATA_ASSETS_FOLDER, DATASET_WITH_EMBEDDINGS_FILE
+from . import SWEEP_RESULTS_FILE
 from .eval_utils import logging_setup
 import logging
+import json
 
 sweep_config_bayes = {
     "method": "bayes",  # Bayesian optimization
@@ -18,7 +19,7 @@ sweep_config_bayes = {
     "parameters": {
         "umap_n_neighbors": {"min": 5, "max": 50},
         "umap_min_dist": {"min": 0.0, "max": 1.0},
-        "umap_n_components": {"min": 2, "max": 8},
+        "umap_n_components": {"min": 8, "max": 40},
         "hdbscan_min_cluster_size": {"min": 5, "max": 30},
         "hdbscan_min_samples": {"min": 1, "max": 30},
         "hdbscan_cluster_selection_epsilon": {"min": 0.0, "max": 0.5},
@@ -138,6 +139,9 @@ def cluster_and_eval(
         metrics.update(**compute_cluster_distribution(clusterer.labels_))
 
     logging.debug(f"{metrics=}")
+    with open(SWEEP_RESULTS_FILE, "a") as file:
+        json.dump({**metrics, **dict(timestamp=pd.Timestamp.now())}, file)
+        file.write("\n")
 
     return metrics
 
@@ -192,22 +196,3 @@ if __name__ == "__main__":
     with wandb.init(project="telegram_digest__test_clustering"):
         sweep_id = wandb.sweep(sweep_config_bayes)
         wandb.agent(sweep_id, sweep_run)
-
-
-# def dummy_test():
-#     group_by_cols = [
-#         "render_msg_upstream",
-#         "include_sender_name",
-#         "join_messages_n",
-#         "join_messages_overlap",
-#     ]
-#     loader = load_embeddings(DATASET_WITH_EMBEDDINGS_FILE, group_by_cols)
-#     dataset_setup, embeddings = next(loader)
-#     metrics = cluster_and_eval(
-#         embeddings,
-#         umap_params=dict(n_neighbors=5, min_dist=0.1),
-#         hdbscan_params=dict(min_cluster_size=5),
-#     )
-
-#     print(dataset_setup)
-#     print(metrics)
