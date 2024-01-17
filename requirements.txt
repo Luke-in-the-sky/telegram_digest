@@ -11,3 +11,4 @@ tiktoken==0.5.2
 # umap-learn 
 # hdbscan 
 # wandb
+# shap xgboost matplotlib
