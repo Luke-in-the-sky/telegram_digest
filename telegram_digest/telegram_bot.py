@@ -3,13 +3,13 @@ from typing import List, Iterable
 import pandas as pd
 from telethon import TelegramClient
 from telethon.sessions import StringSession
-from config import Config
-from utils import (
+from .config import Config
+from .utils import (
     MyLogger,
     clean_string,
     standardize_strings,
 )
-from pydantic_models import Message
+from .pydantic_models import Message
 
 logger = MyLogger("bot").logger
 

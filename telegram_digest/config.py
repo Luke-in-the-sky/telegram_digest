@@ -32,6 +32,6 @@ class AppConfig(BaseSettings):
 
     # `BaseSettings` will attempt to load from environment
     # and form the .env file, if it exists (former takes precedence, t.ly/2hHDL)
-    model_config = SettingsConfigDict(env_file='conf.env')
+    model_config = SettingsConfigDict(env_file='telegram_digest/conf.env')
     
 Config = AppConfig()

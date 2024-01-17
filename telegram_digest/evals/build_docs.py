@@ -4,11 +4,11 @@ import pandas as pd
 from pydantic_settings import BaseSettings
 from typing import Generator
 from typing import List
-from config import Config
-from telegram_bot import TelegramBotBuilder, TelegramMessagesParsing
+from telegram_digest.config import Config
+from telegram_digest.telegram_bot import TelegramBotBuilder, TelegramMessagesParsing
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
-from evals import DATA_ASSETS_FOLDER
+from telegram_digest.evals import DATA_ASSETS_FOLDER
 
 
 def update_config(
@@ -106,7 +106,7 @@ async def main():
 
     builder_configs = [
         DocBuilderSetup(
-            doc_builder_setup_name="testing_4",
+            doc_builder_setup_name="testing_10",
             start_date=end_date - timedelta(days=1),
             end_date=end_date,
             render_msg_upstream=render_msg_upstream,
